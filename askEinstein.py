@@ -7,7 +7,7 @@ import faiss
 import pickle
 import streamlit as st
 from tqdm import tqdm
-from openai import OpenAI
+from openai
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from datetime import datetime
 import fitz  # PyMuPDF
