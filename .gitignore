@@ -1,0 +1,7 @@
+index.faiss
+chunks.pkl
+.streamlit/secrets.toml
+__pycache__/
+env/
+venv/
+.venv/

@@ -1,0 +1,1 @@
+import askEinstein       # the script draws the whole UI on import
