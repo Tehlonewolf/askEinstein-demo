@@ -15,6 +15,7 @@ import pytesseract
 from PIL import Image
 import tiktoken
 import math
+import pathlib, urllib.request
 
 # === Configuration ===
 # Embed your API key directly here (or replace with environment variable retrieval)
@@ -28,22 +29,32 @@ CHUNK_OVERLAP = 50
 BATCH_SIZE = 10          # reduced to avoid token-limit errors
 TOP_K = 5
 
-CHUNKS_FILE = "chunks.pkl"
-INDEX_FILE = "index.faiss"
+REMOTE_INDEX  = "https://einstein-index.s3.us-east-1.amazonaws.com/index.faiss"
+REMOTE_CHUNKS = "https://einstein-index.s3.us-east-1.amazonaws.com/chunks.pkl"
 
-@st.cache_resource(show_spinner="Loading FAISS index …")
+LOCAL_INDEX  = pathlib.Path("index.faiss")
+LOCAL_CHUNKS = pathlib.Path("chunks.pkl")
+
+INDEX_FILE  = str(LOCAL_INDEX)   # keep any legacy calls happy
+CHUNKS_FILE = str(LOCAL_CHUNKS)
+
+@st.cache_resource(show_spinner="Downloading vector index…", ttl=24*3600)
 def load_assets():
-    """
-    Load chunks.pkl and index.faiss if they exist.  
-    Memory-map the FAISS file so only the pages you query are pulled into RAM.
-    If the files are missing, build them from scratch.
-    """
-    if os.path.exists(CHUNKS_FILE) and os.path.exists(INDEX_FILE):
-        chunks_local = load_pickle(CHUNKS_FILE)
-        index_local  = faiss.read_index(INDEX_FILE, faiss.IO_FLAG_MMAP)
-    else:
-        chunks_local, index_local = load_files()         # your existing builder
-    return chunks_local, index_local
+    # ↓ download only if the files aren't here yet
+    if not LOCAL_INDEX.exists():
+        st.write("⏬ Downloading index.faiss (~20 GB)")
+        urllib.request.urlretrieve(REMOTE_INDEX, LOCAL_INDEX)
+    if not LOCAL_CHUNKS.exists():
+        st.write("⏬ Downloading chunks.pkl")
+        urllib.request.urlretrieve(REMOTE_CHUNKS, LOCAL_CHUNKS)
+
+    # memory-map the FAISS file to keep RAM < 2 GB
+    index  = faiss.read_index(str(LOCAL_INDEX), faiss.IO_FLAG_MMAP)
+    with LOCAL_CHUNKS.open("rb") as f:
+        chunks = pickle.load(f)
+    return chunks, index
+
+chunks, index = load_assets()
 
 SYSTEM_PROMPT = (
     "You are a senior property performance consultant. "
