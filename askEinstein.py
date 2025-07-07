@@ -31,7 +31,7 @@ TOP_K = 5
 CHUNKS_FILE = "chunks.pkl"
 INDEX_FILE = "index.faiss"
 
-@st.cache_resource(show_spinner="Loading FAISS index …", persist="disk")
+@st.cache_resource(show_spinner="Loading FAISS index …")
 def load_assets():
     """
     Load chunks.pkl and index.faiss if they exist.  
